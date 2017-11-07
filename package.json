@@ -1,0 +1,15 @@
+{
+  "name": "artstation-likes-scraper",
+  "version": "1.0.0",
+  "description": "Scrape a user profile for that user's likes, and download the images for those posts.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "paul@mindres.in",
+  "license": "ISC",
+  "dependencies": {
+    "bluebird": "^3.5.1",
+  },
+  "devDependencies": {}
+}
