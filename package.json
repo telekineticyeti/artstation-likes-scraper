@@ -1,15 +1,24 @@
 {
   "name": "artstation-likes-scraper",
   "version": "1.0.0",
-  "description": "Scrape a user profile for that user's likes, and download the images for those posts.",
+  "description": "Scrape a user profile for likes, and download the images for those posts.",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "paul@mindres.in",
-  "license": "ISC",
-  "dependencies": {
-    "bluebird": "^3.5.1",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/telekineticyeti/artstation-likes-scraper.git"
   },
-  "devDependencies": {}
+  "keywords": [
+    "artstation",
+    "likes",
+    "scrape"
+  ],
+  "author": "paul.castle@gmail.com",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/telekineticyeti/artstation-likes-scraper/issues"
+  },
+  "homepage": "https://github.com/telekineticyeti/artstation-likes-scraper#readme"
 }
