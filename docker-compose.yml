@@ -1,0 +1,10 @@
+version: '3'
+services:
+    web:
+        build: .
+        volumes:
+            - ".:/usr/app"
+        ports:
+            - "8010:80"
+        restart: always
+        command: ["npm", "run", "watch"]

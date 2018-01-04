@@ -1,0 +1,6 @@
+/data/postgres/*
+docker-compose.yml
+.gitignore
+oauth_token.json
+devnotes.js
+/node_modules/
