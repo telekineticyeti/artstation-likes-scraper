@@ -116,25 +116,53 @@ function resolve_assets(data, callback) {
 					image_extension = "jpg";
 				}
 
-				fs.writeFile('./' + image.name + '.' + image_extension, response.body, function(error) {
+				fs.writeFile('./' + image.name + '.' + image_extension, response.body, (error) => {
 					if (error) {
 						reject(error);
 					}
-					else {
-						// resolve();
-					}
 				});
 
-				console.log('Download Complete: ' + image.name);
+				console.log('....done');
+
 				resolve();
+				return 'b';
 			})
 	}))
 	.then(() => {
-		console.log('All Images Downloaded!');
+		console.log('All downloads complete');
 	})
 	.catch(err => {
 		console.error('Failed: ' + err.message);
 	});
 }
 
-process_like('xVBXX').then(data => { resolve_assets(data); });
+
+var test_hashes = ['xVBXX', 'NvxQb', 'oVJOJ'];
+
+var th = [];
+
+for (var i = 0; i < test_hashes.length; i++) {
+	th.push(process_like(test_hashes[i]).then(data => {
+		console.log('[ PROCESSING: ' + test_hashes[i] + ' ]');
+		resolve_assets(data);
+	}));
+}
+
+// process_like('xVBXX').then(data => { resolve_assets(data); });
+
+// for (var i = 0; i < test_hashes.length; i++) {
+// 	th.push(process_like(test_hashes[i]).then(data => {
+// 		console.log('[ PROCESSING: ' + test_hashes[i] + ' ]');
+// 		resolve_assets(data);
+// 	}));
+// }
+
+// Promise.all(th).then(function() {
+//     console.log("all the files were created");
+// });
+
+return th.reduce((current, next) => {
+	return current.then(next);
+}, Promise.resolve().then(() => {
+	console.log("all the files were created");
+}))
