@@ -106,34 +106,64 @@ function process_like(hash_id) {
 // write latest like hash to a file for later reference
 // 
 function resolve_assets(data, callback) {
-	Promise.each(data.assets, image => new Promise((resolve, reject) => {
-		console.log('Downloading Image: ' + image.name);
-		request({ uri: image.url, followAllRedirects: true, encoding: null })
-			.then(response => {
-				let image_extension = mime.getExtension(response.headers['content-type']);
+	return new Promise((resolve, reject) => {
 
-				if (image_extension === "jpeg") {
-					image_extension = "jpg";
-				}
+		var image_download = [];
 
-				fs.writeFile('./' + image.name + '.' + image_extension, response.body, (error) => {
-					if (error) {
-						reject(error);
-					}
-				});
+		for (var i = 0; i < data.assets; i++) {
+			image_download.push(() => {
+				request({ uri: data.assets[i].url, followAllRedirects: true, encoding: null })
+					.then(response => {
+						console.log('Downloading Image: ' + data.assets[i].name);
+						let image_extension = mime.getExtension(response.headers['content-type']);
+						if (image_extension === "jpeg") { image_extension = "jpg"; }
 
-				console.log('....done');
+						fs.writeFile('./' + image.name + '.' + image_extension, response.body, (error) => {
+							if (error) {
+								reject(error);
+							}
+						});
+						// resolve();
+						console.log('....done');
+					})
+			});
+		}
 
-				resolve();
-				return 'b';
-			})
-	}))
-	.then(() => {
-		console.log('All downloads complete');
-	})
-	.catch(err => {
-		console.error('Failed: ' + err.message);
+		image_download.reduce((current, next) => {
+			return current.then(next);
+		}, Promise.resolve().then(() => {
+			console.log("all files downloaded");
+		}))
+
 	});
+
+
+	// Promise.each(data.assets, image => new Promise((resolve, reject) => {
+	// 	console.log('Downloading Image: ' + image.name);
+	// 	request({ uri: image.url, followAllRedirects: true, encoding: null })
+	// 		.then(response => {
+	// 			let image_extension = mime.getExtension(response.headers['content-type']);
+
+	// 			if (image_extension === "jpeg") {
+	// 				image_extension = "jpg";
+	// 			}
+
+	// 			fs.writeFile('./' + image.name + '.' + image_extension, response.body, (error) => {
+	// 				if (error) {
+	// 					reject(error);
+	// 				}
+	// 			});
+
+	// 			resolve();
+	// 			console.log('....done');
+	// 		})
+	// }))
+	// .then(() => {
+	// 	console.log('All downloads complete');
+	// })
+	// .catch(err => {
+	// 	console.error('Failed: ' + err.message);
+	// });
 }
 
 
@@ -144,7 +174,8 @@ var th = [];
 for (var i = 0; i < test_hashes.length; i++) {
 	th.push(process_like(test_hashes[i]).then(data => {
 		console.log('[ PROCESSING: ' + test_hashes[i] + ' ]');
-		resolve_assets(data);
+
+		resolve_assets(data)
 	}));
 }
 
