@@ -1,3 +1,9 @@
+# Project Specific Ignores
+oauth_token.json
+devnotes.js
+/build
+_dev
+
 # Windows Junk Files
 Thumbs.db
 ehthumbs.db
@@ -19,21 +25,6 @@ $RECYCLE.BIN/
 .LSOverride
 ._*
 
-# Files that might appear in the root of a volume
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-
-# Directories potentially created on remote AFP share
-.AppleDB
-.AppleDesktop
-Network Trash Folder
-Temporary Items
-.apdisk
-
 # Logs
 logs
 *.log
@@ -43,14 +34,6 @@ yarn-error.log*
 
 # Dependency directories
 node_modules/
-jspm_packages/
-vendor/
-
-# Grunt intermediate storage (http://gruntjs.com/creating-plugins#storing-task-files)
-.grunt
-
-# Bower dependency directory (https://bower.io/)
-bower_components
 
 # Runtime data
 pids
@@ -63,16 +46,3 @@ pids
 
 # Optional REPL history
 .node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
-# Environment Variables
-*.env
-
-# Database Data
-/data/postgres/*
-/data/mysql/*
-
-oauth_token.json
-devnotes.js

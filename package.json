@@ -4,8 +4,8 @@
   "description": "Scrape a user profile for likes, and download the images for those posts.",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "watch": "nodemon -L"
+    "start": "ts-node --inspect=5858 src/index.ts",
+    "dev": "./node_modules/nodemon/bin/nodemon.js"
   },
   "repository": {
     "type": "git",
@@ -25,7 +25,11 @@
   "dependencies": {
     "bluebird": "^3.5.1",
     "mime": "^2.1.0",
-    "nodemon": "^1.14.6",
     "request": "^2.83.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.17.5",
+    "ts-node": "^6.1.1",
+    "typescript": "^2.9.2"
   }
 }
