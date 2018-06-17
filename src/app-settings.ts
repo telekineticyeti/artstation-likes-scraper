@@ -1,5 +1,5 @@
 export const Settings = {
-  userName: 'username',
+  userName: 'teleyeti',
   downloadLocation: './build/downloads/',
   hashes: './build/hashes.json'
 }
