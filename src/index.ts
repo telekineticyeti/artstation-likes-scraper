@@ -1,13 +1,21 @@
-import { ArtstationScraper } from "./artstation-scraper"
+import { Settings } from "./app-settings";
+import { ArtstationScraper } from "./artstation-scraper";
 const scraper = new ArtstationScraper;
 
-const username:string = "teleyeti";
+scraper.checkHashChanges()
+  .then(hashChanged => {
+    if (hashChanged) {
+      console.log('Updating hashfile with remote likes')
+      return scraper.getLikeCount(Settings.userName).then(scraper.resolveHashes);
+    } else {
+      console.log('No remote changes detected.')
+      // return false;
+    }
+  }).then(
+    results => {
+      console.log(results)
+      return scraper.writeHashes(results);
+    }
+  );
 
-// scraper.getLikeCount(username).then(response => {
-//   console.log(response)
-// });
-// var test_hashes = ['xVBXX', 'NvxQb', 'oVJOJ'];
 
-scraper.downloadLike('59YYw').then(response => {
-  console.log(response)
-});
