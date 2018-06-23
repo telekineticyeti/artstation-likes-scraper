@@ -216,6 +216,11 @@ export class ArtstationScraper {
     });
   }
 
+  /**
+   * Used by checkHashChanges() to compare the local hashfile count
+   * with remote hash count.
+   * @param status 
+   */
   private getLocalCount(status) {
     return new Promise((resolve, reject) => {
       if (status) {
