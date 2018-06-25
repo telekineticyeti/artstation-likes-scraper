@@ -7,10 +7,11 @@
         {
             "type": "node",
             "request": "attach",
-            "name": "Attach to Process",
-            "port": 5858,
-            "restart": true,
-            "protocol": "inspector"
+            "name": "Attach to Remote",
+            "address": "127.0.0.1",
+            "port": 9229,
+            "localRoot": "${workspaceFolder}",
+            "remoteRoot": "Absolute path to the remote directory containing the program"
         }
     ]
 }

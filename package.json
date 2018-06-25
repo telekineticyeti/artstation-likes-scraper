@@ -4,8 +4,9 @@
   "description": "Scrape a user profile for likes, and download the images for those posts.",
   "main": "server.js",
   "scripts": {
-    "start": "ts-node --inspect=5858 src/index.ts",
-    "dev": "./node_modules/nodemon/bin/nodemon.js"
+    "start": "node -r ts-node/register --inspect=9229 src/index.ts",
+    "dev": "./node_modules/nodemon/bin/nodemon.js",
+    "build": "tsc"
   },
   "repository": {
     "type": "git",

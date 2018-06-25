@@ -1,21 +1,13 @@
-import { Settings } from "./app-settings";
 import { ArtstationScraper } from "./artstation-scraper";
 const scraper = new ArtstationScraper();
 
-scraper
-  .checkHashChanges()
-  .then(hashChanged => {
-    if (hashChanged) {
-      console.log("Updating hashfile with remote likes");
-      return scraper
-        .getLikeCount(Settings.userName)
-        .then(scraper.resolveHashes);
-    } else {
-      console.log("No remote changes detected.");
-      process.exit();
-    }
-  })
-  .then(results => {
-    console.log(results);
-    return scraper.writeHashes(results);
-  });
+scraper.compareHashes().then(comparison => {
+  if (comparison !== false) {
+    let hashesCombined = comparison.difference.concat(comparison.localHashes);
+    scraper
+      .downloadLikes(comparison.difference)
+      .then(scraper.writeHashes(hashesCombined));
+  } else {
+    console.log('No changes detected');
+  }
+});

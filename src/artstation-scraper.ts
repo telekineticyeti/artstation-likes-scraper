@@ -5,6 +5,12 @@ const request = Promise.promisify(require("request"));
 import { Settings } from "./app-settings";
 
 export class ArtstationScraper {
+  public userName: string;
+
+  public constructor() {
+    this.userName = Settings.userName;
+  }
+
   /**
    * Get the like count from a users profile, as well as how many total pages are
    * used required to render their like count (at 50 like items per page).
@@ -14,19 +20,18 @@ export class ArtstationScraper {
    * of like items.
    * The `liked_projects_count` property on the `/users/{user}.json` endpoint provides
    * an errornous value, as it does not decrement when a user removes a like.
-   * @param username Artstation username
    * @returns Promise
    */
-  public getLikeCount(username) {
+  public getRemoteHashCount() {
     return new Promise((resolve, reject) => {
       // let uri: string = 'https://www.artstation.com/users/' + username + '.json';
       let uri: string =
-        "https://www.artstation.com/users/" + username + "/likes.json?page=1";
+        "https://www.artstation.com/users/" + Settings.userName + "/likes.json?page=1";
       request({ uri: uri, followAllRedirects: true })
         .then(response => {
           let body = JSON.parse(response.body);
           resolve({
-            likes: body.total_count,
+            count: body.total_count,
             pages: Math.ceil(body.total_count / 50)
           });
         })
@@ -49,7 +54,19 @@ export class ArtstationScraper {
       let body: any;
       request({ uri: uri, followAllRedirects: true })
         .then(response => {
-          body = JSON.parse(response.body);
+          // Some likes occasionally return an error code
+          // if they've been deleted.
+          if (response.statusCode !== 200) {
+            console.warn(`${id} Could not be resolved`);
+            resolve(false);
+          } else {
+            try {
+              body = JSON.parse(response.body);
+            } catch(error) {
+              console.log('FAILED on ', id)
+              reject(error);
+            }
+          }
 
           like = {
             title: body.user.full_name,
@@ -108,59 +125,58 @@ export class ArtstationScraper {
    * @param callback Optional - callback to fire when all assets are retrieved (TODO)
    * @returns Promise
    */
-  public resolveAssets(data: any, callback?: any) {
-    return new Promise((resolve, reject) => {
-      Promise.all(data.assets.map(this.downloadAsset)).then(() => {
-        console.log("All files downloaded");
-      });
-    });
-  }
+  public downloadAssets(data: any) {
+    const total: number = data.assets.length;
+    let count: number = 0;
 
-  /**
-   * Download a single asset
-   * @param asset Asset object containing name and URL data
-   * @returns Promise
-   */
-  private downloadAsset(asset: Asset) {
-    return new Promise((resolve, reject) => {
-      console.log("Downloading Asset:", asset.fileName);
-      request({ uri: asset.url, followAllRedirects: true, encoding: null })
-        .then(response => {
-          let assetType = Mime.getExtension(response.headers["content-type"]);
+    return data.assets.reduce((promise, asset) => {
+      return promise
+        .then(() => {
+          count++;
+          const counter = `[${count}/${total}]`;
 
-          if (assetType === "jpeg") {
-            assetType = "jpg";
-          }
-
-          FileSystem.writeFile(
-            Settings.downloadLocation + asset.fileName + "." + assetType,
-            response.body,
-            error => {
-              if (error) {
-                reject(error);
-              } else {
-                console.log("Download Complete:", asset.fileName);
-                resolve();
-              }
-            }
-          );
+          console.log(`DOWNLOADING ${counter}: ${asset.fileName}`);
+          return resolveSingleAsset(asset).then(() => console.log(`${counter} COMPLETE!`));
         })
-        .catch(error => {
-          reject(error);
+        .catch(console.error);
+      }, Promise.resolve());
+
+      function resolveSingleAsset(asset) {
+        return new Promise((resolve, reject) => {
+          request({ uri: asset.url, followAllRedirects: true, encoding: null })
+            .then(response => {
+              let assetType = Mime.getExtension(response.headers["content-type"]);
+    
+              if (assetType === "jpeg") assetType = "jpg";
+    
+              FileSystem.writeFile(
+                Settings.downloadLocation + asset.fileName + "." + assetType,
+                response.body,
+                error => {
+                  if (error) {
+                    reject(error);
+                  } else {
+                    resolve();
+                  }
+                }
+              );
+            })
+            .catch(console.error);
         });
-    });
+      };
   }
 
   /**
-   *
+   * Resolves all remote hash ID's for likes on the user's profile.
    * @param data Input object containing the number of likes and pages
    * @param limit Number of page resolves to limit to. Usually defined by data object.
    * @returns Promise
    */
-  public resolveHashes(data: any, limit: number) {
-    if (typeof limit === "undefined") {
-      limit = data.pages + 1;
-    }
+  public resolveHashesFromPages(data: any) {
+    // if (typeof limit === "undefined") {
+      const limit = data.pages + 1;
+      // const limit = 1;
+    // }
 
     return new Promise((resolve, reject) => {
       let uri: string =
@@ -181,6 +197,7 @@ export class ArtstationScraper {
       });
 
       function getHashesFromPage(page) {
+        console.log(`Resolving page [${page}]`)
         return new Promise((resolve, reject) => {
           request({ uri: page, followAllRedirects: true, encoding: null })
             .then(response => {
@@ -195,6 +212,90 @@ export class ArtstationScraper {
             });
         });
       }
+    });
+  }
+  
+  /**
+   * Get local hash count followed by a remote hash count, then
+   * compares for and returns an array of symetrical differences.
+   * @returns Promise
+   */
+  public compareHashes() {
+    let localData = this.getLocalHashes();
+    let remoteData = this.getRemoteHashCount();
+    return Promise.all([localData, remoteData]).then(values => {
+      return values;
+    })
+    .then(values => {
+      let local = values[0];
+      let remote = values[1];
+
+      if (local.count !== remote.count) {
+        return new Promise(resolve => {
+          this.resolveHashesFromPages(remote)
+            .then(remoteHashes => {
+              // Get the symmetrical difference between local and remote hashes
+              // https://stackoverflow.com/questions/1187518/how-to-get-the-difference-between-two-arrays-in-javascript
+              let difference = remoteHashes
+                              .filter(x => !local.hashes.includes(x))
+                              .concat(local.hashes.filter(x => !remoteHashes.includes(x)));
+              
+              resolve({
+                localHashes: local.hashes,
+                remoteHashes: remoteHashes,
+                difference: difference,
+              });
+            })
+        });
+      } else {
+        return false;
+      }
+    });
+  }
+
+  /**
+   * Download the assets for a like or an array of likes in series to the target directory.
+   * @param hashes Array contains hash IDs
+   * @returns Promise
+   */
+  public downloadLikes(hashes) {
+    return hashes.reduce((promiseChain, hash) => {
+      return promiseChain
+        .then(() => {
+          return this.processLike(hash)
+                     .then(like => {
+                        if (like) {
+                          return this.downloadAssets(like)
+                        } else {
+                          console.log(`Skipping ${hash}`);
+                        }
+                      })
+        })
+    }, Promise.resolve());
+  }
+
+  /**
+   * Retrieve hashes from local file
+   * @returns Promise containing contents of hash file
+   */
+  public getLocalHashes() {
+    let respond: any = {};
+
+    return new Promise(resolve => {
+      this.checkHashFileExists().then(
+        () => {
+          this.readFile(Settings.hashes)
+            .then(file => {
+              if (typeof file.hashes !== 'undefined') {
+                respond.hashes = file.hashes;
+              } else {
+                respond.hashes = [];
+              }
+              respond.count = respond.hashes.length;
+              resolve(respond);
+            });
+        }
+      )
     });
   }
 
@@ -216,56 +317,20 @@ export class ArtstationScraper {
     });
   }
 
-  /**
-   * Used by checkHashChanges() to compare the local hashfile count
-   * with remote hash count.
-   * @param status 
-   */
-  private getLocalCount(status) {
+  private checkHashFileExists() {
     return new Promise((resolve, reject) => {
-      if (status) {
-        this.readFile(Settings.hashes).then(file => {
-          resolve(file.lastCount);
-        });
-      } else {
-        resolve(0);
-      }
-    });
-  }
-
-  /**
-   * Operation performs a hash check for likes using the following process:
-   * Check if local hash file exists
-   *
-   * @returns Promise
-   */
-  public checkHashChanges() {
-    return new Promise(resolve => {
-      let checkFilePromise = this.checkFileExists(Settings.hashes);
-      let localCountPromise = checkFilePromise.then(
-        this.getLocalCount.bind(this)
-      );
-      let remoteCountPromise = this.getLikeCount(Settings.userName);
-
-      Promise.all([
-        checkFilePromise,
-        localCountPromise,
-        remoteCountPromise
-      ]).then(([fileCheck, localCount, remoteCount]) => {
-        if (localCount !== remoteCount.likes) {
-          resolve(true);
+      FileSystem.stat(Settings.hashes, (error, stat) => {
+        if (error === null) {
+          resolve();
+        } else if (error.code === 'ENOENT') {
+          this.writeHashes([]);
+          resolve();
         } else {
-          resolve(false);
+          console.error(error);
+          reject();
         }
       });
-    });
-  }
-
-  private checkFileExists(path) {
-    return new Promise((resolve, reject) => {
-      FileSystem.exists(path, function(exists) {
-        resolve(exists);
-      });
+      
     });
   }
 
@@ -280,6 +345,7 @@ export class ArtstationScraper {
       });
     });
   }
+
 }
 
 export interface LikeObject {
